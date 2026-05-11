@@ -86,16 +86,14 @@ class SnippetSlicer(object):
         init_pdg = translatePDGByNode(self.joern, func_node)
         opt_pdg = modifyStmtNode(init_pdg)
 
-        i = 0
-        while i < opt_pdg.vcount():
-            if opt_pdg.vs[i]['type'] == 'Statement' and opt_pdg.vs[i]['name'] not in cfg.vs['name']:
+        for vertex in opt_pdg.vs:
+            if vertex['type'] == 'Statement' and vertex['name'] not in cfg.vs['name']:
                 for n in cfg.vs:
-                    if (opt_pdg.vs[i]['code'] == n['code'] and
-                            int(opt_pdg.vs[i]['location'].split(':')[0]) == int(n['location'].split(':')[0])):
-                        opt_pdg.vs[i]['name'] = n['name']
-                        opt_pdg.vs[i]['location'] = n['location']
+                    if (vertex['code'] == n['code'] and
+                            int(vertex['location'].split(':')[0]) == int(n['location'].split(':')[0])):
+                        vertex['name'] = n['name']
+                        vertex['location'] = n['location']
                         break
-            i += 1
 
         d_use, d_def = getUseDefVarByPDG(self.joern, opt_pdg)
         opt_pdg = modifyDataEdgeVal(opt_pdg)
@@ -144,14 +142,14 @@ class SnippetSlicer(object):
         results_back = program_slice_backwards(pdg, list_startnodes)
         results_back = sortedNodesByLoc(results_back)
         start_list = [[results_back, 0]]
-        not_scan_func_list = []
-        list_cross_func_back, not_scan_func_list = process_crossfuncs_back_byfirstnode(
-            start_list, test_id, 0, not_scan_func_list)
+        skipped_func_list = []
+        list_cross_func_back, skipped_func_list = process_crossfuncs_back_byfirstnode(
+            start_list, test_id, 0, skipped_func_list)
         list_results_back = [item[0] for item in list_cross_func_back]
 
         all_result = []
         for result in list_results_back:
-            result, not_scan_func_list = process_cross_func(result, test_id, 0, result, not_scan_func_list)
+            result, skipped_func_list = process_cross_func(result, test_id, 0, result, skipped_func_list)
             all_result.append(result)
         return all_result
 
