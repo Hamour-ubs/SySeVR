@@ -43,28 +43,28 @@ class SliceComponentTest(unittest.TestCase):
             code="int demo() {",
         )
         assign_a = pdg.add_node(
-            name="n2",
+            name="assign_a_node",
             type="IdentifierDeclStatement",
             location="2:1",
             functionId="func_1",
             code="int a = 1;",
         )
         assign_b = pdg.add_node(
-            name="n3",
+            name="assign_b_node",
             type="IdentifierDeclStatement",
             location="3:1",
             functionId="func_1",
             code="int b = 2;",
         )
         pdg.add_node(
-            name="n4",
+            name="unused_var_node",
             type="IdentifierDeclStatement",
             location="4:1",
             functionId="func_1",
             code="int unused = 99;",
         )
         critical = pdg.add_node(
-            name="n5",
+            name="critical_node",
             type="ExpressionStatement",
             location="5:1",
             functionId="func_1",
