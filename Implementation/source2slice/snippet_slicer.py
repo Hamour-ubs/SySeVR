@@ -82,15 +82,29 @@ class SnippetSlicer(object):
 
         return cfg, dict_if2cfgnode, dict_cfgnode2if
 
+    def _parse_line(self, location):
+        if location is None or ':' not in location:
+            return None
+        try:
+            return int(location.split(':')[0])
+        except ValueError:
+            return None
+
     def _build_pdg(self, func_node, cfg, dict_if2cfgnode, dict_cfgnode2if):
         init_pdg = translatePDGByNode(self.joern, func_node)
         opt_pdg = modifyStmtNode(init_pdg)
 
+        cfg_names = set(cfg.vs['name'])
         for vertex in opt_pdg.vs:
-            if vertex['type'] == 'Statement' and vertex['name'] not in cfg.vs['name']:
+            if vertex['type'] == 'Statement' and vertex['name'] not in cfg_names:
+                vertex_line = self._parse_line(vertex['location'])
+                if vertex_line is None:
+                    continue
                 for n in cfg.vs:
-                    if (vertex['code'] == n['code'] and
-                            int(vertex['location'].split(':')[0]) == int(n['location'].split(':')[0])):
+                    cfg_line = self._parse_line(n['location'])
+                    if cfg_line is None:
+                        continue
+                    if vertex['code'] == n['code'] and vertex_line == cfg_line:
                         vertex['name'] = n['name']
                         vertex['location'] = n['location']
                         break
@@ -158,7 +172,9 @@ class SnippetSlicer(object):
         for node in list_nodes:
             if node['location'] is None or node['filepath'] is None:
                 continue
-            line_num = int(node['location'].split(':')[0])
+            line_num = self._parse_line(node['location'])
+            if line_num is None:
+                continue
             if node['filepath'] not in by_file:
                 by_file[node['filepath']] = {line_num}
             else:
@@ -187,7 +203,7 @@ class SnippetSlicer(object):
         if test_id is None:
             test_id = os.path.basename(os.path.dirname(filepath))
         func_nodes = getFuncNodeInTestID(self.joern, test_id)
-        if func_nodes is False or func_nodes == []:
+        if not func_nodes:
             raise RuntimeError('No functions found for test ID %s. Ensure the snippet is parsed into Joern.' % test_id)
 
         pdg_by_func = {}
@@ -206,7 +222,10 @@ class SnippetSlicer(object):
                 for node in pdg.vs:
                     if node['filepath'] != filepath or node['location'] is None:
                         continue
-                    if int(node['location'].split(':')[0]) == int(vuln_line):
+                    node_line = self._parse_line(node['location'])
+                    if node_line is None:
+                        continue
+                    if int(node_line) == int(vuln_line):
                         start_nodes.append(node['name'])
 
                 if not start_nodes:
