@@ -56,11 +56,10 @@ class SnippetSlicer(object):
         if not os.path.exists(source_dir):
             os.makedirs(source_dir)
         filepath = os.path.join(source_dir, filename)
-        fout = open(filepath, 'w')
-        fout.write(code)
-        if not code.endswith('\n'):
-            fout.write('\n')
-        fout.close()
+        with open(filepath, 'w') as fout:
+            fout.write(code)
+            if not code.endswith('\n'):
+                fout.write('\n')
         return filepath
 
     def _build_cfg(self, func_node):
@@ -112,13 +111,12 @@ class SnippetSlicer(object):
             os.makedirs(pdg_dir)
         store_file_name = func_node.properties['name'] + '_' + str(func_node._id)
         store_path = os.path.join(pdg_dir, store_file_name)
-        fout = open(store_path, 'wb')
-        pickle.dump(pdg, fout, True)
-        fout.close()
+        with open(store_path, 'wb') as fout:
+            pickle.dump(pdg, fout, True)
 
     def _build_call_dict(self, test_id):
         call_g = getCallGraph(self.joern, test_id)
-        if call_g == False:
+        if call_g is False:
             return False
         call_dir = os.path.join(self.workspace, 'dict_call2cfgNodeID_funcID', test_id)
         if not os.path.exists(call_dir):
@@ -130,9 +128,8 @@ class SnippetSlicer(object):
                 call_map[endnode['name']] = [(edge['var'], call_g.vs[edge.tuple[0]]['name'])]
             else:
                 call_map[endnode['name']].append((edge['var'], call_g.vs[edge.tuple[0]]['name']))
-        fout = open(os.path.join(call_dir, 'dict.pkl'), 'wb')
-        pickle.dump(call_map, fout, True)
-        fout.close()
+        with open(os.path.join(call_dir, 'dict.pkl'), 'wb') as fout:
+            pickle.dump(call_map, fout, True)
         return True
 
     def _interprocedural_backwards(self, pdg, startnodes_id, test_id):
@@ -161,7 +158,7 @@ class SnippetSlicer(object):
     def _render_slice(self, list_nodes):
         by_file = {}
         for node in list_nodes:
-            if node['location'] == None or node['filepath'] == None:
+            if node['location'] is None or node['filepath'] is None:
                 continue
             line_num = int(node['location'].split(':')[0])
             if node['filepath'] not in by_file:
@@ -171,9 +168,8 @@ class SnippetSlicer(object):
 
         rendered = []
         for filepath in sorted(by_file.keys()):
-            fin = open(filepath, 'r')
-            content = fin.readlines()
-            fin.close()
+            with open(filepath, 'r') as fin:
+                content = fin.readlines()
             for line_num in sorted(by_file[filepath]):
                 if line_num <= 0 or line_num > len(content):
                     continue
@@ -190,10 +186,10 @@ class SnippetSlicer(object):
         return self.slice_file(filepath, vuln_line, test_id)
 
     def slice_file(self, filepath, vuln_line, test_id=None):
-        if test_id == None:
+        if test_id is None:
             test_id = os.path.basename(os.path.dirname(filepath))
         func_nodes = getFuncNodeInTestID(self.joern, test_id)
-        if func_nodes == False or func_nodes == []:
+        if func_nodes is False or func_nodes == []:
             raise RuntimeError('No functions found for test ID %s. Ensure the snippet is parsed into Joern.' % test_id)
 
         pdg_by_func = {}
@@ -210,7 +206,7 @@ class SnippetSlicer(object):
             for pdg in pdg_by_func.values():
                 start_nodes = []
                 for node in pdg.vs:
-                    if node['filepath'] != filepath or node['location'] == None:
+                    if node['filepath'] != filepath or node['location'] is None:
                         continue
                     if int(node['location'].split(':')[0]) == int(vuln_line):
                         start_nodes.append(node['name'])
@@ -255,6 +251,6 @@ if __name__ == '__main__':
                            keep_workspace=args.keep_workspace)
     try:
         results = slicer.slice_file(args.code_file, args.vuln_line, args.test_id)
-        print _format_slice_output(results)
+        print(_format_slice_output(results))
     finally:
         slicer.cleanup()
