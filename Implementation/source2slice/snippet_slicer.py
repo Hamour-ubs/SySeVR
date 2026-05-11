@@ -138,7 +138,7 @@ class SnippetSlicer(object):
             if node['name'] in startnodes_id:
                 list_startnodes.append(node)
 
-        if list_startnodes == []:
+        if not list_startnodes:
             return []
 
         results_back = program_slice_backwards(pdg, list_startnodes)
@@ -162,7 +162,7 @@ class SnippetSlicer(object):
                 continue
             line_num = int(node['location'].split(':')[0])
             if node['filepath'] not in by_file:
-                by_file[node['filepath']] = set([line_num])
+                by_file[node['filepath']] = {line_num}
             else:
                 by_file[node['filepath']].add(line_num)
 
@@ -211,14 +211,14 @@ class SnippetSlicer(object):
                     if int(node['location'].split(':')[0]) == int(vuln_line):
                         start_nodes.append(node['name'])
 
-                if start_nodes == []:
+                if not start_nodes:
                     continue
 
                 list_slices = self._interprocedural_backwards(pdg, start_nodes, test_id)
                 for list_nodes in list_slices:
                     slice_results.append(self._render_slice(list_nodes))
 
-        if slice_results == []:
+        if not slice_results:
             raise RuntimeError('No slice nodes found for line %s in %s.' % (vuln_line, filepath))
 
         return slice_results
