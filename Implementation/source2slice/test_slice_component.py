@@ -33,7 +33,7 @@ class FakePDG(object):
 
 
 class SliceComponentTest(unittest.TestCase):
-    def test_backward_slice_keeps_only_relevant_statements(self):
+    def test_backward_slice_excludes_unused_variables(self):
         pdg = FakePDG()
         func = pdg.add_node(
             name="func_1",
@@ -86,6 +86,28 @@ class SliceComponentTest(unittest.TestCase):
                 "int sum = a + b;",
             ],
         )
+
+    def test_backward_slice_with_no_dependencies_keeps_critical_line(self):
+        pdg = FakePDG()
+        pdg.add_node(
+            name="func_2",
+            type="Function",
+            location="1:1",
+            functionId="func_2",
+            code="int demo2() {",
+        )
+        critical = pdg.add_node(
+            name="critical_no_dep_node",
+            type="ExpressionStatement",
+            location="2:1",
+            functionId="func_2",
+            code="dangerous_call();",
+        )
+
+        sliced_nodes = program_slice_backwards(pdg, [critical])
+        sliced_codes = [node["code"] for node in sliced_nodes]
+
+        self.assertEqual(sliced_codes, ["int demo2() {", "dangerous_call();"])
 
 
 if __name__ == "__main__":
